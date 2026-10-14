@@ -1,1 +1,9 @@
 @import "tailwindcss";
+@import "@dronico/droni-kit/dist/droni-kit.css";
+
+/* Modo oscuro por clase (.dark en <html>), igual que droni-kit */
+@custom-variant dark (&:where(.dark, .dark *));
+
+.dark {
+  color-scheme: dark;
+}
