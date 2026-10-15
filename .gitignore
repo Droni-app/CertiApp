@@ -23,3 +23,6 @@ logs
 .env.*
 !.env.example
 server/generated
+
+# Datos fuente sensibles (CSV con datos personales, plantillas oficiales). Nunca versionar.
+sources/
