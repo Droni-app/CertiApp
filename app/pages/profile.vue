@@ -40,7 +40,7 @@ async function onSubmit() {
     </h1>
 
     <DuiCard title="Información">
-      <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+      <dl class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
         <div>
           <dt class="text-gray-500 dark:text-gray-400">Nombre</dt>
           <dd class="font-medium text-gray-800 dark:text-gray-100">{{ user?.name }}</dd>
@@ -48,6 +48,10 @@ async function onSubmit() {
         <div>
           <dt class="text-gray-500 dark:text-gray-400">Correo</dt>
           <dd class="font-medium text-gray-800 dark:text-gray-100 break-all">{{ user?.email }}</dd>
+        </div>
+        <div>
+          <dt class="text-gray-500 dark:text-gray-400">Cargo</dt>
+          <dd class="font-medium text-gray-800 dark:text-gray-100">{{ user?.position ?? '—' }}</dd>
         </div>
         <div>
           <dt class="text-gray-500 dark:text-gray-400">Rol</dt>

@@ -343,6 +343,7 @@ export const adminResources: AdminResource[] = [
     columns: [
       { name: 'name', label: 'Nombre' },
       { name: 'email', label: 'Correo' },
+      { name: 'position', label: 'Cargo' },
       { name: 'role', label: 'Rol' },
       { name: 'active', label: 'Activo', type: 'boolean' },
     ],
@@ -351,6 +352,7 @@ export const adminResources: AdminResource[] = [
     fields: [
       { name: 'name', label: 'Nombre', type: 'string', required: true, max: 120 },
       { name: 'email', label: 'Correo electrónico', type: 'email', required: true, max: 191 },
+      { name: 'position', label: 'Cargo', type: 'string', max: 120, help: 'Aparece en "Proyectó" de los certificados' },
       { name: 'password', label: 'Contraseña', type: 'password', help: 'Mínimo 8 caracteres. Al editar, déjala vacía para no cambiarla' },
       { name: 'role', label: 'Rol', type: 'select', required: true, options: ['admin', 'user'] },
       { name: 'active', label: 'Activo', type: 'boolean' },

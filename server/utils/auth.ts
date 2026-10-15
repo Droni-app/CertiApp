@@ -7,6 +7,7 @@ export const toSessionUser = (user: User) => ({
   name: user.name,
   email: user.email,
   role: user.role,
+  position: user.position,
 })
 
 /** Exige sesión activa con rol admin. */

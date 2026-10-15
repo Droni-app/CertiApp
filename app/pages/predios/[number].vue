@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { DuiCard, DuiBadge, DuiButton, DuiAlert, DuiTabs, DuiTable, DuiSkeleton } from '@dronico/droni-kit'
+import { DuiCard, DuiBadge, DuiButton, DuiAlert, DuiTabs, DuiTable, DuiSkeleton, DuiModal, DuiForm, DuiLabel, DuiInput } from '@dronico/droni-kit'
 
 type Row = Record<string, any>
 
@@ -222,6 +222,27 @@ const tab = computed({
   set: (value) => router.replace({ query: { ...route.query, tab: value } }),
 })
 
+// --- Certificado catastral -----------------------------------------------------------
+const certificateOpen = ref(false)
+const certificate = reactive({ addressedTo: 'A QUIEN INTERESE', consecutive: '' })
+const consecutiveError = computed(() =>
+  certificate.consecutive && !/^\d{1,6}$/.test(certificate.consecutive) ? 'Solo números, máximo 6 dígitos' : undefined,
+)
+const certificatePreview = computed(
+  () => `25-307-${(certificate.consecutive || '').padStart(6, '0')}-${new Date().getFullYear()}`,
+)
+
+function generateCertificate() {
+  if (!/^\d{1,6}$/.test(certificate.consecutive)) return
+  const query = new URLSearchParams({
+    para: certificate.addressedTo.trim() || 'A QUIEN INTERESE',
+    consecutivo: certificate.consecutive,
+  })
+  window.open(`/certificados/${number}?${query}`, '_blank')
+  certificateOpen.value = false
+  certificate.consecutive = ''
+}
+
 useHead({ title: () => `Predio ${number} · CertiApp` })
 </script>
 
@@ -252,9 +273,19 @@ useHead({ title: () => `Predio ${number} · CertiApp` })
             <DuiBadge v-if="p.status" :color="p.status === 'Activo' ? 'success' : 'warning'" variant="soft">{{ p.status }}</DuiBadge>
           </div>
         </div>
-        <DuiButton v-if="user?.role === 'admin'" variant="outline" size="sm" :to="`/admin/predios/${p.number}`">
-          <i class="mdi mdi-pencil-outline mr-1" /> Editar en administración
-        </DuiButton>
+        <div class="flex flex-wrap gap-2">
+          <DuiButton
+            color="primary"
+            :disabled="p.isPlaceholder"
+            :title="p.isPlaceholder ? 'El predio no está en el registro de predios' : undefined"
+            @click="certificateOpen = true"
+          >
+            <i class="mdi mdi-file-certificate-outline mr-1" /> Generar certificado
+          </DuiButton>
+          <DuiButton v-if="user?.role === 'admin'" variant="outline" :to="`/admin/predios/${p.number}`">
+            <i class="mdi mdi-pencil-outline mr-1" /> Editar en administración
+          </DuiButton>
+        </div>
       </div>
 
       <DuiAlert v-if="p.isPlaceholder" color="warning" variant="outline">
@@ -322,5 +353,32 @@ useHead({ title: () => `Predio ${number} · CertiApp` })
         </ClientOnly>
       </DuiCard>
     </template>
+
+    <ClientOnly>
+      <DuiModal v-model="certificateOpen" title="Certificado catastral individual" size="md">
+        <DuiForm id="certificate-form" @submit="generateCertificate">
+          <DuiLabel title="Dirigido a" icon="mdi mdi-account-arrow-right-outline" required>
+            <DuiInput v-model="certificate.addressedTo" maxlength="200" required block />
+          </DuiLabel>
+          <DuiLabel
+            title="Número consecutivo"
+            icon="mdi mdi-pound"
+            :error="consecutiveError"
+            required
+          >
+            <DuiInput v-model="certificate.consecutive" inputmode="numeric" maxlength="6" placeholder="Ej. 123" required block />
+          </DuiLabel>
+          <p class="text-sm text-gray-600 dark:text-gray-300">
+            No. CERTIFICADO: <span class="font-mono font-semibold">{{ certificatePreview }}</span>
+          </p>
+        </DuiForm>
+        <template #footer>
+          <DuiButton variant="ghost" @click="certificateOpen = false">Cancelar</DuiButton>
+          <DuiButton type="submit" form="certificate-form" color="primary" :disabled="!certificate.consecutive || !!consecutiveError">
+            <i class="mdi mdi-open-in-new mr-1" /> Generar
+          </DuiButton>
+        </template>
+      </DuiModal>
+    </ClientOnly>
   </div>
 </template>
