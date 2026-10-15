@@ -25,3 +25,271 @@ model User {
 
   @@map("users")
 }
+
+// ---------------------------------------------------------------------------
+// Datos catastrales (importados desde sources/DB/*.csv)
+// El número predial (30 dígitos) es la llave que relaciona todas las tablas.
+// Los comentarios /// indican la columna de origen en el CSV.
+// ---------------------------------------------------------------------------
+
+/// Predios.csv
+model Property {
+  /// Numero Predial
+  number                     String    @id @db.VarChar(30)
+  /// Numero Predial Anterior
+  previousNumber             String?   @map("previous_number") @db.VarChar(30)
+  /// ZONA: 01 = urbano, 00 o > 01 = rural
+  zone                       String?   @db.VarChar(2)
+  /// Codigo Homologado
+  homologatedCode            String?   @map("homologated_code") @db.VarChar(20)
+  /// NUPRE
+  nupre                      String?   @db.VarChar(20)
+  /// condicion (NPH, PH.Unidad_Predial, Condominio.Unidad_Predial, Mejoras...)
+  condition                  String?   @db.VarChar(40)
+  /// Matricula Inmobiliaria
+  registrationNumber         String?   @map("registration_number") @db.VarChar(30)
+  /// Matricula Inmobiliaria_ant
+  previousRegistrationNumber String?   @map("previous_registration_number") @db.VarChar(30)
+  /// Area de Terreno (m²)
+  landArea                   Decimal?  @map("land_area") @db.Decimal(14, 3)
+  /// Area Construida (m²)
+  builtArea                  Decimal?  @map("built_area") @db.Decimal(14, 3)
+  /// Direccion
+  address                    String?   @db.VarChar(200)
+  /// Destinacion Economica
+  economicDestination        String?   @map("economic_destination") @db.VarChar(60)
+  /// Tipo de Predio
+  propertyType               String?   @map("property_type") @db.VarChar(60)
+  /// Avaluo Catastral
+  cadastralValue             Decimal?  @map("cadastral_value") @db.Decimal(15, 2)
+  /// Avaluo Anterior
+  previousCadastralValue     Decimal?  @map("previous_cadastral_value") @db.Decimal(15, 2)
+  /// Avaluo 2024
+  cadastralValue2024         Decimal?  @map("cadastral_value_2024") @db.Decimal(15, 2)
+  /// Vigencia
+  validFrom                  DateTime? @map("valid_from") @db.Date
+  /// Estado (Activo, Nuevo, Omitido, Cerrado)
+  status                     String?   @db.VarChar(20)
+  /// NPN_Predio_Matriz: número predial del predio matriz (PH / condominio)
+  matrixNumber               String?   @map("matrix_number") @db.VarChar(30)
+  /// Coeficiente_Copropiedad
+  coOwnershipCoefficient     Decimal?  @map("co_ownership_coefficient") @db.Decimal(9, 4)
+  /// true si el predio no existe en Predios.csv y se creó solo para relacionar registros de otras tablas
+  isPlaceholder              Boolean   @default(false) @map("is_placeholder")
+  createdAt                  DateTime  @default(now()) @map("created_at")
+  updatedAt                  DateTime  @updatedAt @map("updated_at")
+
+  matrix                Property?              @relation("PropertyMatrix", fields: [matrixNumber], references: [number])
+  units                 Property[]             @relation("PropertyMatrix")
+  constructions         Construction[]
+  horizontalProperty    HorizontalProperty?
+  administrativeSources AdministrativeSource[]
+  owners                PropertyOwner[]
+  procedures            CadastralProcedure[]
+  landZones             LandZone[]
+
+  @@index([previousNumber])
+  @@index([homologatedCode])
+  @@index([registrationNumber])
+  @@map("properties")
+}
+
+/// Construcciones.csv
+model Construction {
+  id                Int      @id @default(autoincrement())
+  propertyNumber    String   @map("property_number") @db.VarChar(30)
+  /// Orden
+  order             Int      @db.SmallInt
+  /// identificador (A, B, C...)
+  identifier        String?  @db.VarChar(5)
+  /// Tipo_Construccion
+  constructionType  String?  @map("construction_type") @db.VarChar(40)
+  /// Tipo_Dominio
+  domainType        String?  @map("domain_type") @db.VarChar(20)
+  /// Tipo_Unidad_Construccion
+  unitType          String?  @map("unit_type") @db.VarChar(40)
+  /// total_habitaciones
+  bedrooms          Int?     @db.SmallInt
+  /// total_banios
+  bathrooms         Int?     @db.SmallInt
+  /// total_locales
+  commercialUnits   Int?     @map("commercial_units") @db.SmallInt
+  /// total_plantas
+  floors            Int?     @db.SmallInt
+  /// estrato
+  stratum           Int?     @db.SmallInt
+  /// uso_cons
+  useCode           Int?     @map("use_code") @db.SmallInt
+  /// puntaje
+  score             Int?     @db.SmallInt
+  /// tipologia
+  typology          String?  @db.VarChar(60)
+  /// area_construida (m²)
+  builtArea         Decimal? @map("built_area") @db.Decimal(14, 3)
+  /// Edad
+  age               Int?
+  /// Vida_Util
+  usefulLife        Int?     @map("useful_life") @db.SmallInt
+  /// Estado_De_Conservacion
+  conservationState Decimal? @map("conservation_state") @db.Decimal(4, 1)
+  /// Avaluo_Cat_Construccion
+  cadastralValue    Decimal? @map("cadastral_value") @db.Decimal(15, 2)
+
+  property Property @relation(fields: [propertyNumber], references: [number], onDelete: Cascade)
+
+  @@index([propertyNumber, order])
+  @@map("constructions")
+}
+
+/// DatosPH_Condominio.csv
+model HorizontalProperty {
+  id               Int      @id @default(autoincrement())
+  propertyNumber   String   @unique @map("property_number") @db.VarChar(30)
+  /// COND
+  condominiumCode  String?  @map("condominium_code") @db.VarChar(5)
+  /// Area total de Terreno
+  totalLandArea    Decimal? @map("total_land_area") @db.Decimal(14, 3)
+  /// Area total de Terreno Privada
+  privateLandArea  Decimal? @map("private_land_area") @db.Decimal(14, 3)
+  /// Area total de Terreno Comun
+  commonLandArea   Decimal? @map("common_land_area") @db.Decimal(14, 3)
+  /// Area total Construida
+  totalBuiltArea   Decimal? @map("total_built_area") @db.Decimal(14, 3)
+  /// Area total Construida Privada
+  privateBuiltArea Decimal? @map("private_built_area") @db.Decimal(14, 3)
+  /// Area total Construida Comun
+  commonBuiltArea  Decimal? @map("common_built_area") @db.Decimal(14, 3)
+  /// Numero de torres
+  towers           Int?     @db.SmallInt
+  /// Total de unidades privadas
+  privateUnits     Int?     @map("private_units")
+
+  property Property @relation(fields: [propertyNumber], references: [number], onDelete: Cascade)
+
+  @@map("horizontal_properties")
+}
+
+/// FuentesAdministrativas.csv
+model AdministrativeSource {
+  id             Int       @id @default(autoincrement())
+  propertyNumber String    @map("property_number") @db.VarChar(30)
+  /// Tipo de fuente
+  sourceType     String?   @map("source_type") @db.VarChar(60)
+  /// Ente_Emisor
+  issuingEntity  String?   @map("issuing_entity") @db.VarChar(100)
+  /// Oficina_Origen
+  office         String?   @db.VarChar(10)
+  /// Ciudad Origen
+  city           String?   @db.VarChar(60)
+  /// NUM_ESCRITURA
+  documentNumber String?   @map("document_number") @db.VarChar(30)
+  /// FECHA_FUENTE (1900-01-01 se guarda como null)
+  documentDate   DateTime? @map("document_date") @db.Date
+  /// OBSERVACION
+  notes          String?   @db.VarChar(255)
+
+  property Property @relation(fields: [propertyNumber], references: [number], onDelete: Cascade)
+
+  @@index([propertyNumber])
+  @@map("administrative_sources")
+}
+
+/// Interesados.csv (datos de la persona natural o jurídica)
+model Party {
+  id             Int     @id @default(autoincrement())
+  /// Tipo de Documento
+  documentType   String? @map("document_type") @db.VarChar(30)
+  /// Numero de Documento (0 / X se guardan como null)
+  documentNumber String? @map("document_number") @db.VarChar(30)
+  /// Nombre Completo
+  fullName       String  @map("full_name") @db.VarChar(200)
+  /// PRIMER_NOMBRE
+  firstName      String? @map("first_name") @db.VarChar(60)
+  /// SEGUNDO_NOMBRE
+  middleName     String? @map("middle_name") @db.VarChar(60)
+  /// PRIMER APELLIDO
+  firstSurname   String? @map("first_surname") @db.VarChar(60)
+  /// SEGUNDO_APELLIDO
+  secondSurname  String? @map("second_surname") @db.VarChar(60)
+  /// Razon_Social
+  businessName   String? @map("business_name") @db.VarChar(200)
+  /// Sexo
+  sex            String? @db.VarChar(20)
+  /// Grupo Etnico
+  ethnicGroup    String? @map("ethnic_group") @db.VarChar(30)
+  /// Estado civil
+  maritalStatus  String? @map("marital_status") @db.VarChar(60)
+
+  properties PropertyOwner[]
+
+  @@index([documentType, documentNumber])
+  @@index([fullName])
+  @@map("parties")
+}
+
+/// Interesados.csv (relación predio - interesado)
+model PropertyOwner {
+  id             Int      @id @default(autoincrement())
+  propertyNumber String   @map("property_number") @db.VarChar(30)
+  partyId        Int      @map("party_id")
+  /// orden de propietarios
+  order          Int
+  /// Tipo_Derecho (Dominio, Posesion, Ocupacion). null = Propietario(a)
+  rightType      String?  @map("right_type") @db.VarChar(20)
+  /// Participacion (%)
+  participation  Decimal? @db.Decimal(9, 4)
+
+  property Property @relation(fields: [propertyNumber], references: [number], onDelete: Cascade)
+  party    Party    @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyNumber, order])
+  @@index([partyId])
+  @@map("property_owners")
+}
+
+/// TramitesCatastrales.csv
+model CadastralProcedure {
+  id               Int       @id @default(autoincrement())
+  propertyNumber   String    @map("property_number") @db.VarChar(30)
+  /// Clasificacion_Mutacion
+  mutationType     String?   @map("mutation_type") @db.VarChar(40)
+  /// Numero_Resolucion
+  resolutionNumber String?   @map("resolution_number") @db.VarChar(30)
+  /// Fecha_Resolucion
+  resolutionDate   DateTime? @map("resolution_date") @db.Date
+  /// Fecha_Radicacion (1900-01-01 se guarda como null)
+  filingDate       DateTime? @map("filing_date") @db.Date
+
+  property Property @relation(fields: [propertyNumber], references: [number], onDelete: Cascade)
+
+  @@index([propertyNumber])
+  @@index([resolutionNumber])
+  @@map("cadastral_procedures")
+}
+
+/// Zonas.csv (zonas físicas y geoeconómicas del terreno)
+model LandZone {
+  id               Int      @id @default(autoincrement())
+  propertyNumber   String   @map("property_number") @db.VarChar(30)
+  /// NUM-ORDEN-TER
+  order            Int      @db.SmallInt
+  /// ZON21-TER
+  physicalZone1    String?  @map("physical_zone_1") @db.VarChar(10)
+  /// ECO21-TER
+  geoeconomicZone1 String?  @map("geoeconomic_zone_1") @db.VarChar(10)
+  /// MET21-TER (m²)
+  area1            Decimal? @map("area_1") @db.Decimal(14, 3)
+  /// ZON22-TER
+  physicalZone2    String?  @map("physical_zone_2") @db.VarChar(10)
+  /// ECO22-TER
+  geoeconomicZone2 String?  @map("geoeconomic_zone_2") @db.VarChar(10)
+  /// MET22-TER (m²)
+  area2            Decimal? @map("area_2") @db.Decimal(14, 3)
+  /// Avaluo_Cat_terreno
+  landValue        Decimal? @map("land_value") @db.Decimal(15, 2)
+
+  property Property @relation(fields: [propertyNumber], references: [number], onDelete: Cascade)
+
+  @@index([propertyNumber, order])
+  @@map("land_zones")
+}

@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed:cadastral": "tsx prisma/seeders/cadastral.ts"
   },
   "dependencies": {
     "@dronico/droni-kit": "^1.26.0",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@adonisjs/hash": "^9.1.1",
+    "csv-parse": "^7.0.3",
     "dotenv": "^18.0.8",
     "prisma": "^7.10.0",
     "tsx": "^4.23.15",
