@@ -1,6 +1,8 @@
 import type { H3Event } from 'h3'
 import { z } from 'zod'
 import { Prisma } from '../generated/prisma/client'
+// Import explícito: el auto-import no detecta `prisma as unknown as ...` en el build de producción
+import { prisma } from './prisma'
 
 // Mensajes de validación de zod en español
 z.config(z.locales.es())

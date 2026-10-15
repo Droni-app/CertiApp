@@ -1,0 +1,47 @@
+services:
+  app:
+    build:
+      context: .
+      target: production
+    restart: unless-stopped
+    environment:
+      # nginx-proxy + acme-companion
+      VIRTUAL_HOST: certiapp.droni.vip
+      VIRTUAL_PORT: 3000
+      LETSENCRYPT_HOST: certiapp.droni.vip
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      # base de datos (contenedor cluster-mysql, alias "mysql" en la red cluster)
+      DATABASE_URL: ${DATABASE_URL}
+      # clave (32+ caracteres) para sellar la cookie de sesión
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD}
+    networks:
+      - nginx-proxy
+      - cluster
+
+  # Herramientas de base de datos (migraciones y seeders), no se levanta con `up`:
+  #   docker compose run --rm tools npm run db:deploy
+  #   docker compose run --rm tools npm run db:seed
+  #   docker compose run --rm tools npm run db:seed:cadastral
+  tools:
+    build:
+      context: .
+      target: builder
+    profiles: ["tools"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      SEED_ADMIN_NAME: ${SEED_ADMIN_NAME:-Administrador}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+    volumes:
+      # CSV de origen para db:seed:cadastral (no se versionan ni entran en la imagen)
+      - ./sources:/app/sources:ro
+    networks:
+      - cluster
+
+networks:
+  nginx-proxy:
+    external: true
+  cluster:
+    external: true

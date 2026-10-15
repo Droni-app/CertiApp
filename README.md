@@ -71,3 +71,18 @@ Notas de la importación:
 - Decimales con coma, fechas seriales de Excel y fechas con día y mes invertidos se corrigen; `1900-01-01` y los valores inválidos quedan en `null`.
 - `property_owners.right_type = null` significa Propietario(a).
 - En `schema.prisma` cada campo indica con `///` su columna de origen en el CSV.
+
+## Despliegue (Docker)
+
+Producción en `https://certiapp.droni.vip` detrás de `nginx-proxy` + `acme-companion` (redes externas `nginx-proxy` y `cluster`). La base de datos es `certiapp` en el contenedor `cluster-mysql` (alias `mysql`).
+
+```bash
+# .env con DATABASE_URL (host mysql), NUXT_SESSION_PASSWORD y SEED_ADMIN_*
+docker compose build
+docker compose run --rm tools npm run db:deploy            # migraciones
+docker compose run --rm tools npm run db:seed              # admin inicial
+docker compose run --rm tools npm run db:seed:cadastral    # importa sources/DB (montado como volumen)
+docker compose up -d app
+```
+
+Para actualizar: `git pull && docker compose build && docker compose run --rm tools npm run db:deploy && docker compose up -d app`.
